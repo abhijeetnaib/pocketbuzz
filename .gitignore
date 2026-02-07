@@ -1,7 +1,11 @@
-# Environment variables
+# Environment variables (plain text - DO NOT COMMIT)
 .env
 .env.local
 *.env
+
+# ALLOW encrypted env files (safe to commit)
+!*.env.encrypted
+!.env.local.encrypted
 
 # Python
 __pycache__/
