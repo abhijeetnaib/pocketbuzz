@@ -25,7 +25,7 @@ app.add_middleware(
         settings.app_url,
         "http://localhost:3000",
         "http://127.0.0.1:3000",
-        "https://vbulletin-demand-voted-meetup.trycloudflare.com",
+        "https://named-allied-herb-fifteen.trycloudflare.com",
     ],
     allow_credentials=True,
     allow_methods=["*"],

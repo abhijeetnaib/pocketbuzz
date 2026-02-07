@@ -38,22 +38,54 @@ async def send_campaign_blast(
             "failed": len(phones)
         }
     
-    results = {"sent": 0, "failed": 0, "errors": []}
+    results = {"sent": 0, "failed": 0, "details": []}
     
     for phone in phones:
         try:
-            success = await send_single_message(
-                to_phone=phone,
-                image_url=image_url,
-                caption=caption
-            )
-            if success:
-                results["sent"] += 1
-            else:
-                results["failed"] += 1
+            # Clean phone number for consistency
+            clean_phone = phone.replace("+", "").replace(" ", "").replace("-", "")
+            if not clean_phone.startswith("91"):
+                clean_phone = f"91{clean_phone}"
+                
+            print(f"DEBUG: Attempting to send campaign to {clean_phone}")
+            
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                payload = {
+                    "messaging_product": "whatsapp",
+                    "recipient_type": "individual",
+                    "to": clean_phone,
+                    "type": "image",
+                    "image": {
+                        "link": image_url,
+                        "caption": caption
+                    }
+                }
+                
+                response = await client.post(
+                    f"{WHATSAPP_API_URL}/{settings.whatsapp_phone_number_id}/messages",
+                    headers={
+                        "Authorization": f"Bearer {settings.whatsapp_access_token}",
+                        "Content-Type": "application/json"
+                    },
+                    json=payload
+                )
+                
+                print(f"DEBUG: WhatsApp API response for {clean_phone}: {response.status_code} - {response.text}")
+                
+                if response.status_code == 200:
+                    results["sent"] += 1
+                else:
+                    results["failed"] += 1
+                    
+                results["details"].append({
+                    "phone": clean_phone,
+                    "status": response.status_code,
+                    "response": response.json() if response.status_code == 200 else response.text
+                })
         except Exception as e:
+            print(f"DEBUG: Critical error sending to {phone}: {e}")
             results["failed"] += 1
-            results["errors"].append(str(e))
+            results["details"].append({"phone": phone, "error": str(e)})
     
     return results
 

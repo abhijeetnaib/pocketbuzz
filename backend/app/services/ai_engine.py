@@ -128,30 +128,44 @@ Generate ONE caption only, no quotes around it:"""
             Restaurant ambiance in background.
             Photorealistic style."""
         else:
-            # Build the image prompt
-            food_subject = item_name if item_name else "delicious Indian food spread"
+            # Generate a detailed photographic description using LLM
+            # Focus on anatomy, lighting, and authentic regional context
+            visual_prompt_helper = f"""Describe a professional commercial food photograph of: {item_name or 'a delicious Indian dish'}.
+            Campaign Offer: "{caption}"
             
-            # Custom visual descriptors for specific cuisines
-            visual_style = ""
-            if "saoji" in food_subject.lower():
-                visual_style = "Authentic Nagpur Saoji style, dark red spicy gravy with floating oil (tarri), spicy and rich texture, freshly chopped coriander garnish."
-            elif "biryani" in food_subject.lower():
-                visual_style = "Layered basmati rice, saffron strands, caramelized onions, served in a clay pot (handi)."
-            elif "sukha" in food_subject.lower() or "sukka" in food_subject.lower() or "dry" in food_subject.lower():
-                visual_style = "Dry spicy masala fry, coated with rich dark roasted coconut spices, garnished with curry leaves and coriander, served with slice of lime and onion rings."
-                
-            prompt = f"""Professional food photography of {food_subject} at an Indian restaurant.
-            {visual_style}
-            Cinematic lighting, shallow depth of field, steam rising from hot food.
-            Warm golden tones, 8K quality, appetizing presentation.
-            Dark moody background with dramatic side lighting.
-            Restaurant ambiance visible in soft bokeh background.
-            Photorealistic, commercial food photography style."""
+            DIRECTIONS:
+            - If it's Wada Pav: Describe it as a rustic deep-fried yellow potato fritter inside a square, hand-pulled soft white 'pav' (square bread). NOT a burger bun.
+            - If it's Chicken Malvani: Describe it as a dark-brown, thick coconut-based curry with visible spices, served in a traditional Maharashtrian stainless steel thali with soft Bhakri or Kombdi Vade.
+            - Setting: Authentic context (vibrant Indian street or a rustic-modern Maharashtrian restaurant).
+            - Details: Steam rising, fresh coriander garnish, dramatic warm lighting, 8k resolution.
+            
+            Return ONLY a single paragraph of descriptive prose for a professional photographer."""
+            
+            visual_description = ""
+            if self.openai_client:
+                try:
+                    llm_response = self.openai_client.chat.completions.create(
+                        model="gpt-4o-mini",
+                        messages=[{"role": "system", "content": "You are a specialist in culinary anatomy and lighting. You describe food by its shapes, textures, and traditional serving style to ensure 100% accuracy."},
+                                  {"role": "user", "content": visual_prompt_helper}],
+                        max_tokens=400
+                    )
+                    visual_description = llm_response.choices[0].message.content.strip()
+                except Exception as e:
+                    print(f"Error generating visual prompt: {e}")
+            
+            if not visual_description:
+                visual_description = f"Professional commercial food photography of {item_name or 'Indian food'}, highly appetizing, regional authentic presentation."
+
+            prompt = f"{visual_description} Photorealistic, cinematic lighting, food advertising style, high fidelity, 16k."
 
         try:
-            async with httpx.AsyncClient(timeout=60.0) as client:
+            async with httpx.AsyncClient(timeout=120.0) as client:
+                # Shifting back to Flux Pro 1.1 but FORCING JPEG for WhatsApp compatibility
+                model_endpoint = "https://fal.run/fal-ai/flux-pro/v1.1" 
+                
                 response = await client.post(
-                    "https://fal.run/fal-ai/flux/schnell",
+                    model_endpoint,
                     headers={
                         "Authorization": f"Key {settings.fal_api_key}",
                         "Content-Type": "application/json"
@@ -159,8 +173,7 @@ Generate ONE caption only, no quotes around it:"""
                     json={
                         "prompt": prompt,
                         "image_size": "landscape_16_9",
-                        "num_images": 1,
-                        "enable_safety_checker": True
+                        "output_format": "jpeg"  # Crucial for WhatsApp delivery!
                     }
                 )
                 
