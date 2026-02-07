@@ -1,0 +1,23 @@
+# Railway Configuration for PocketBuzz Backend
+[build]
+builder = "nixpacks"
+
+[deploy]
+startCommand = "uvicorn app.main:app --host 0.0.0.0 --port $PORT"
+healthcheckPath = "/health"
+healthcheckTimeout = 100
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 3
+
+# Environment variables should be set in Railway dashboard
+# Required:
+# - SUPABASE_URL
+# - SUPABASE_ANON_KEY
+# - SUPABASE_SERVICE_ROLE_KEY
+# - OPENAI_API_KEY
+# - FAL_API_KEY
+# - WHATSAPP_PHONE_NUMBER_ID
+# - WHATSAPP_ACCESS_TOKEN
+# - APP_URL (frontend URL)
+# - API_URL (this backend URL)
+# - SECRET_KEY

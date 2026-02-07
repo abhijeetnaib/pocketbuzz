@@ -18,13 +18,19 @@ app = FastAPI(
     redoc_url="/redoc" if settings.debug else None,
 )
 
-# CORS Configuration
+# CORS Configuration - Production Ready
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         settings.app_url,
         "http://localhost:3000",
         "http://127.0.0.1:3000",
+        # Production domains
+        "https://pocketbuzz.autoskout.com",
+        "https://autoskout.com",
+        # Vercel preview URLs
+        "https://pocketbuzz-*.vercel.app",
+        # Dev tunnels (can be removed in production)
         "https://named-allied-herb-fifteen.trycloudflare.com",
     ],
     allow_credentials=True,
